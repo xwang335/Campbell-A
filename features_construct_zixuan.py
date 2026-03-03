@@ -21,13 +21,20 @@ def pull_data_from_wrds(start, end, freq):
     # Pull data from the 'msf' table for the specified date range
     if freq == 'M':
         query = f"""
-        SELECT
-            permno,
-            date,
-            ret
-        FROM crsp.msf
-        WHERE date >= '{start}'
-        AND date <= '{end}'
+        SELECT 
+            b.permno,
+            b.date,
+            b.ret,
+            b.prc,
+            b.shrout,
+            c.rf,
+            (b.ret - c.rf) AS exret
+        FROM crsp.msf b
+        LEFT JOIN ff.factors_monthly c
+            ON date_trunc('month', b.date) = date_trunc('month', c.date)
+        WHERE b.date >= '{start}'
+        AND b.date <= '{end}'
+        AND b.ret IS NOT NULL
         """
     if freq == 'D':
         query = f"""
@@ -46,6 +53,7 @@ def pull_data_from_wrds(start, end, freq):
         """
     df = db.raw_sql(query)
     db.close()
+    df['me'] = df['prc'].abs() * df['shrout']
     return df
 
 # %%
@@ -139,6 +147,7 @@ end = '1987-12-31'
 if not os.path.exists("data/raw/crsp_monthly.parquet"):
     df = pull_data_from_wrds(start=start, end=end, freq='M')
     df = clean_data(df)
+    print(df['exret'])
     df.to_parquet("data/raw/crsp_monthly.parquet")
 
 # Check if the momentum features file exists, if not, create it
