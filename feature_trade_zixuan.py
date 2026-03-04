@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-from features_construct_zixuan import FEATURE_REGISTRY
+from rawdata_obtain import FEATURE_REGISTRY
 
 # %%
 def norm_rank(data):

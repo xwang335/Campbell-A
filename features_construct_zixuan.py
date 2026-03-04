@@ -141,7 +141,7 @@ def baspread_feature(df):
 
 # %%
 start = '1956-01-01'
-end = '1987-12-31'
+end = '2016-12-31'
 
 # Check if the raw data file exists, if not, pull from WRDS and save
 if not os.path.exists("data/raw/crsp_monthly.parquet"):
