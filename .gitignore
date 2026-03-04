@@ -6,5 +6,6 @@ outputs/*
 
 __pycache__/
 *.pyc
+*.parquet
 .DS_Store
 .ipynb_checkpoints/
