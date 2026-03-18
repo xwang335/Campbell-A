@@ -77,30 +77,20 @@ def ret_summary(port_ret):
     t_stat = mean_monthly / (std_monthly / np.sqrt(T))
     sharpe = (mean_monthly / std_monthly) * np.sqrt(12)
 
-    return mean_monthly, std_monthly, t_stat, sharpe
+    return sharpe
 
 def predictiveR2(df, feature_name, date_col, split_date):
-    # print(f"Data before dropping NA for {feature_name} - shape: {df.shape}")
-    # print(df['mom1m'].isna().mean())
-    # print(df['ret'].isna().mean())
-    # print(df['exret'].isna().mean())
     
     df = df.dropna(subset=[feature_name, 'exret'])
 
-    # print(f"Data after dropping NA for {feature_name} - shape: {df.shape}")
-
     df_train = df[df[date_col] < split_date]
     df_test = df[df[date_col] >= split_date]
-
-    # print(f"Training set for {feature_name} - shape: {df_train.shape}")
-    # print(f"Test set for {feature_name} - shape: {df_test.shape}")
 
     # perform OLS regression on the training set
     X_train = df_train[feature_name]
     X_train = np.column_stack([np.ones(X_train.shape[0]), X_train])  # add intercept
     # check
-    # print(f"Training data for {feature_name} - X shape: {X_train.shape}, y shape: {df_train['exret'].shape}")
-
+    
     y = df_train['exret'] # use excess return for R-squared calculation to align with author
     beta = np.linalg.lstsq(X_train, y, rcond=None)[0]
     # predict on the test set
@@ -115,6 +105,14 @@ def predictiveR2(df, feature_name, date_col, split_date):
 
     return r2
 
+def oos_r2(y_true, y_pred):
+    """
+    Out-of-sample R² with zero benchmark — Equation (19):
+        R²_oos = 1 - Σ(r - r̂)² / Σr²
+    """
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    return 1.0 - np.sum((y_true - y_pred) ** 2) / np.sum(y_true ** 2)
 
 def run_trade_pipeline():
     # parse the feature name from command line arguments
@@ -140,16 +138,16 @@ def run_trade_pipeline():
     # print(panel['exret'])  # Debugging line to check data before cleaning
 
     port_ret = cumulate_return(df=panel, date_col='date', rank_col='y_pred', ret_col='ret', weighting=args.weighting)
+    port_exret = cumulate_return(df=panel, date_col='date', rank_col='y_pred', ret_col='y_true', weighting=args.weighting)
 
     ret_plot(port_ret, args.file[0], args.weighting)
-    mean_monthly, std_monthly, t_stat, sharpe = ret_summary(port_ret)
-    # r2 = predictiveR2(panel, args.file[0],'date_m', split_date='1972-01-01')
+    IR = ret_summary(port_ret)
+    sharpe = ret_summary(port_exret)
+    r2 = oos_r2(panel['y_true'], panel['y_pred'])
 
     output_text = (
-        f"Mean Monthly Return: {mean_monthly:.4f}\n"
-        f"Standard Deviation of Monthly Returns: {std_monthly:.4f}\n"
-        f"T-Statistic: {t_stat:.2f}\n"
         f"Annualized Sharpe Ratio: {sharpe:.2f}\n"
+        f"Information Ratio: {IR:.2f}\n"
         # f"Predictive R-squared: {r2:.5f}\n"
     )
     file_path = f"outputs/{args.file[0]}_{args.weighting}_summary.txt"

@@ -5,15 +5,17 @@ import pandas as pd
 import numpy as np
 import os
 import wrds
+import warnings
+warnings.filterwarnings('ignore')
 
-# %%
-FEATURE_REGISTRY = {}
+from google.colab import drive
+drive.mount('/content/drive')
 
-def register_feature(name):
-    def decorator(func):
-        FEATURE_REGISTRY[name] = func
-        return func
-    return decorator
+print('Setup complete.')
+
+path = "/content/drive/MyDrive/Campbell A data/"
+
+os.chdir(path)
 
 # %%
 def pull_data_from_wrds(start, end, freq):
@@ -67,20 +69,23 @@ def clean_data(df):
     return df
 
 # %%
-parser = argparse.ArgumentParser(description="features pipeline")
-parser.add_argument('--start', type=str, nargs='+', 
-                    help='enter the start date for raw data pull: --start 1956-01-01')
-parser.add_argument('--end', type=str, nargs='+',
-                    help='enter the end date for raw data pull: --end 2016-12-31')
+def main():
+    parser = argparse.ArgumentParser(description="features pipeline")
+    parser.add_argument('--start', type=str, nargs='+', 
+                        help='enter the start date for raw data pull: --start 1956-01-01')
+    parser.add_argument('--end', type=str, nargs='+',
+                        help='enter the end date for raw data pull: --end 2016-12-31')
 
-args = parser.parse_args()
-start = args.start[0]
-end = args.end[0]
+    args = parser.parse_args()
+    start = args.start
+    end = args.end
 
-# Check if the raw data file exists, if not, pull from WRDS and save
-if not os.path.exists("data/raw/crsp_monthly.parquet"):
-    df = pull_data_from_wrds(start=start, end=end, freq='M')
-    df = clean_data(df)
-    print(df['exret'])
-    df.to_parquet("data/raw/crsp_monthly.parquet")
+    # Check if the raw data file exists, if not, pull from WRDS and save
+    if not os.path.exists("crsp_monthly.parquet"):
+        df = pull_data_from_wrds(start=start, end=end, freq='M')
+        df = clean_data(df)
+        print(df['exret'])
+        df.to_parquet("crsp_monthly.parquet")
 
+if __name__ == "__main__":
+    main()
