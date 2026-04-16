@@ -212,11 +212,20 @@ def report_yearly(yearly_records, model_name="glm", n_total_groups=920, save_pat
 
     # Bottom panel: Active groups (Figure 3 style)
     axes[1].plot(df["year"], df["n_active"],
-                 color="darkorange", linewidth=1.5, marker="o", markersize=4)
+                 color="steelblue", linewidth=0.8, marker="o", markersize=4)
+    for _, row in df.iterrows():
+        axes[1].annotate(
+            str(int(row["n_active"])),
+            xy=(row["year"], row["n_active"]),
+            xytext=(0, 6),
+            textcoords="offset points",
+            ha="center", va="bottom",
+            fontsize=6.5,
+        )
     axes[1].set_ylabel("# of Active Features")
     axes[1].set_xlabel("Year")
     axes[1].set_title(f"{display} — Time-varying Model Complexity (Active Groups / {n_total_groups})")
-    axes[1].set_ylim(0, n_total_groups * 1.05)
+    axes[1].set_ylim(0, df["n_active"].max() * 1.15)
     axes[1].grid(True, linestyle="--", alpha=0.4)
 
     axes[1].set_xlim(df["year"].min() - 0.5, df["year"].max() + 0.5)
