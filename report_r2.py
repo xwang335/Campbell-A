@@ -105,7 +105,7 @@ def compute_r2(results):
 
 # ── Table 1 style overall report ─────────────────────────────────────────────
 
-def report(results, model_name):
+def report(results, model_name, save_path=None):
     """
     Compute R² and print Table 1 style comparison.
 
@@ -115,6 +115,8 @@ def report(results, model_name):
         columns: DATE, permno, mvel1, y_true, y_pred
     model_name : str
         e.g. "glm", "enet", "nn1", ...
+    save_path : str or None
+        If provided, saves the table as a .txt file to this path
     """
     key = model_name.strip().lower()
     display = DISPLAY_NAMES.get(key, model_name)
@@ -129,26 +131,37 @@ def report(results, model_name):
         "Bottom 1,000 (smallest mvel1)",
     ]
 
+    lines = []
     if has_paper:
         paper = PAPER_R2[key]
         w = 78
-        print()
-        print("=" * w)
-        print(f"  {'Subsample':<35} {'OOS R²':>10}  {f'Paper {display}':>15}")
-        print("-" * w)
+        lines.append("")
+        lines.append("=" * w)
+        lines.append(f"  {'Subsample':<35} {'OOS R²':>10}  {f'Paper {display}':>15}")
+        lines.append("-" * w)
         for label, r2, p_val in zip(labels, my_vals, paper):
-            print(f"  {label:<35} {r2*100:>+10.4f}%  {f'~ {p_val:+.2f}%':>15}")
-        print("=" * w)
+            lines.append(f"  {label:<35} {r2*100:>+10.4f}%  {f'~ {p_val:+.2f}%':>15}")
+        lines.append("=" * w)
     else:
         w = 55
-        print()
-        print(f"  (Model '{display}' not in paper lookup — showing R² only)")
-        print("=" * w)
-        print(f"  {'Subsample':<35} {'OOS R²':>10}")
-        print("-" * w)
+        lines.append("")
+        lines.append(f"  (Model '{display}' not in paper lookup — showing R² only)")
+        lines.append("=" * w)
+        lines.append(f"  {'Subsample':<35} {'OOS R²':>10}")
+        lines.append("-" * w)
         for label, r2 in zip(labels, my_vals):
-            print(f"  {label:<35} {r2*100:>+10.4f}%")
-        print("=" * w)
+            lines.append(f"  {label:<35} {r2*100:>+10.4f}%")
+        lines.append("=" * w)
+
+    text = "\n".join(lines)
+
+    if save_path:
+        txt_path = str(save_path) + "Pooled OOS R2.txt"
+        with open(txt_path, "w") as f:
+            f.write(text + "\n")
+        print(f"Table saved to {txt_path}")
+
+    print(text)
 
     return {"r2_all": r2_all, "r2_top": r2_top, "r2_bot": r2_bot}
 
@@ -177,27 +190,38 @@ def report_yearly(yearly_records, model_name="glm", n_total_groups=920, save_pat
 
     # ── Per-year table ────────────────────────────────────────
     w = 55
-    print()
-    print("=" * w)
-    print(f"  {display} — Per-year OOS R² and Active Groups")
-    print("-" * w)
-    print(f"  {'Year':<8} {'OOS R²':>10}  {'Active Groups':>15}")
-    print("-" * w)
+    lines = []
+    lines.append("")
+    lines.append("=" * w)
+    lines.append(f"  {display} — Per-year OOS R² and Active Groups")
+    lines.append("-" * w)
+    lines.append(f"  {'Year':<8} {'OOS R²':>10}  {'Active Groups':>15}")
+    lines.append("-" * w)
     for _, row in df.iterrows():
-        print(
+        lines.append(
             f"  {int(row['year']):<8}"
             f" {row['test_r2']*100:>+10.4f}%"
             f"  {int(row['n_active']):>4}/{n_total_groups}"
         )
-    print("-" * w)
+    lines.append("-" * w)
     mean_r2 = df["test_r2"].mean()
     mean_active = df["n_active"].mean()
-    print(
+    lines.append(
         f"  {'Mean':<8}"
         f" {mean_r2*100:>+10.4f}%"
         f"  {mean_active:>7.1f}/{n_total_groups}"
     )
-    print("=" * w)
+    lines.append("=" * w)
+
+    text = "\n".join(lines)
+
+    if save_path:
+        txt_path = str(save_path) + "yearly_r2.txt"
+        with open(txt_path, "w") as f:
+            f.write(text + "\n")
+        print(f"Table saved to {txt_path}")
+
+    print(text)
 
     # ── Figure 3 style plot ───────────────────────────────────
     fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
@@ -233,8 +257,9 @@ def report_yearly(yearly_records, model_name="glm", n_total_groups=920, save_pat
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150)
-        print(f"Figure saved to {save_path}")
+        fig_path = str(save_path) + "fig3_plot.png"
+        plt.savefig(fig_path, dpi=150)
+        print(f"Figure saved to {fig_path}")
 
     plt.show()
 
