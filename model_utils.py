@@ -3,6 +3,16 @@ import torch
 
 
 # DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# ── 新函数：替换 build_features_920 ──────────────────────────────────────────
+def build_features_168(data, char_cols, sic2_dummies_cols):
+    """
+    Build 168-dimensional feature matrix (no macro interactions):
+        [94 raw chars] + [74 SIC2 dummies] = 168 features
+    """
+    chars     = data[char_cols].to_numpy(dtype=np.float32)          # (N, 94)
+    sic2_vals = data[sic2_dummies_cols].to_numpy(dtype=np.float32)  # (N, 74)
+    return np.hstack([chars, sic2_vals])                            # (N, 168)
+ 
 
 def build_features_920(data, char_cols, macro_cols, sic2_dummies_cols):
     """
